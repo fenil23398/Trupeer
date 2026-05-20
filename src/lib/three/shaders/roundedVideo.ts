@@ -10,6 +10,7 @@ export const roundedVideoVertexShader = /* glsl */ `
 export const roundedVideoFragmentShader = /* glsl */ `
   uniform sampler2D uTexture;
   uniform float uRadius;
+  uniform float uOpacity;
   uniform vec2 uSize;
   varying vec2 vUv;
 
@@ -27,6 +28,7 @@ export const roundedVideoFragmentShader = /* glsl */ `
       discard;
     }
 
-    gl_FragColor = texture2D(uTexture, uv);
+    vec4 color = texture2D(uTexture, uv);
+    gl_FragColor = vec4(color.rgb, color.a * uOpacity);
   }
 `;

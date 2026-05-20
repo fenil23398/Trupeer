@@ -6,6 +6,7 @@ import {
 
 /** Sky blue from provided background.jpg — used if letterboxing ever appears */
 const SCENE_CLEAR_COLOR = 0x00aeef;
+const VIDEO_FADE_MS = 180;
 
 export interface SceneStyle {
   padding: number;
@@ -30,6 +31,7 @@ export class SceneManager {
   private height = 1;
   private padding = 32;
   private borderRadius = 32;
+  private videoFadeStartedAt: number | null = null;
   private disposed = false;
 
   constructor(
@@ -72,6 +74,7 @@ export class SceneManager {
       uniforms: {
         uTexture: { value: this.videoTexture },
         uRadius: { value: 0 },
+        uOpacity: { value: 0 },
         uSize: { value: new THREE.Vector2(1, 1) },
       },
       vertexShader: roundedVideoVertexShader,
@@ -82,14 +85,21 @@ export class SceneManager {
 
     const videoGeometry = new THREE.PlaneGeometry(1, 1);
     this.videoMesh = new THREE.Mesh(videoGeometry, this.videoMaterial);
+    this.videoMesh.visible =
+      this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
     this.scene.add(this.videoMesh);
 
     this.video.addEventListener("loadedmetadata", this.handleVideoMetadata);
+    this.video.addEventListener("loadeddata", this.handleVideoData);
     this.resize(this.canvas.clientWidth, this.canvas.clientHeight);
   }
 
   private handleVideoMetadata = (): void => {
     this.updateLayout();
+  };
+
+  private handleVideoData = (): void => {
+    this.revealVideo();
   };
 
   updateStyle(style: SceneStyle): void {
@@ -118,6 +128,8 @@ export class SceneManager {
   render(): void {
     if (this.disposed) return;
     if (this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      this.revealVideo();
+      this.updateVideoOpacity();
       this.videoTexture.needsUpdate = true;
     }
     this.renderer.render(this.scene, this.camera);
@@ -126,6 +138,7 @@ export class SceneManager {
   dispose(): void {
     this.disposed = true;
     this.video.removeEventListener("loadedmetadata", this.handleVideoMetadata);
+    this.video.removeEventListener("loadeddata", this.handleVideoData);
     this.videoTexture?.dispose();
     this.backgroundTexture?.dispose();
     this.videoMaterial?.dispose();
@@ -205,6 +218,19 @@ export class SceneManager {
 
     this.videoMaterial.uniforms.uRadius.value = Math.max(0, radiusNorm);
     this.videoMaterial.uniforms.uSize.value.set(planeW, planeH);
+  }
+
+  private revealVideo(): void {
+    this.videoMesh.visible = true;
+    this.videoFadeStartedAt ??= performance.now();
+  }
+
+  private updateVideoOpacity(): void {
+    if (this.videoFadeStartedAt === null) return;
+
+    const elapsed = performance.now() - this.videoFadeStartedAt;
+    const opacity = Math.min(elapsed / VIDEO_FADE_MS, 1);
+    this.videoMaterial.uniforms.uOpacity.value = opacity;
   }
 
   /** Fit inside the box — full video visible, no cropping */
