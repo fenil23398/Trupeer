@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Trupeer Video Player
 
-## Getting Started
+Custom composited video player built with Next.js, Three.js, Tailwind CSS, and shadcn/ui.
 
-First, run the development server:
+## Features
+
+- Three.js canvas compositing background image + video
+- Word-level transcript sync with active word highlight
+- Text selection skip (strikethrough + playback jump)
+- Padding and border-radius controls (real-time)
+- Play/pause and seekable timeline
+- Mock API routes for transcript and media metadata
+
+## Setup
+
+```bash
+npm install
+```
+
+### Add your video
+
+Place the demo video at:
+
+```
+public/assets/video.mp4
+```
+
+The transcript in `public/data/transcript.json` is synced to ~200s of narration.
+
+### Run
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## API
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `GET /api/transcript` — word-level transcript JSON
+- `GET /api/media` — video and background URLs + duration
 
-## Learn More
+## Project structure
 
-To learn more about Next.js, take a look at the following resources:
+- `src/lib/playback/PlaybackEngine.ts` — playback + skip logic (non-React)
+- `src/lib/three/SceneManager.ts` — Three.js compositing
+- `src/components/player/CompositedVideoPlayer.tsx` — reusable canvas player
+- `src/components/VideoEditor.tsx` — main editor shell
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See [PLAN.md](./PLAN.md) for full architecture.
