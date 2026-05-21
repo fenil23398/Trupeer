@@ -13,10 +13,22 @@ export interface SceneStyle {
   borderRadius: number;
 }
 
+interface SceneManagerOptions {
+  onVideoFrameReady?: () => void;
+}
+
+type VideoFrameCallbackVideo = HTMLVideoElement & {
+  requestVideoFrameCallback?: (
+    callback: (now: number, metadata: VideoFrameCallbackMetadata) => void
+  ) => number;
+  cancelVideoFrameCallback?: (handle: number) => void;
+};
+
 export class SceneManager {
   private readonly canvas: HTMLCanvasElement;
   private readonly video: HTMLVideoElement;
   private readonly backgroundUrl: string;
+  private readonly options: SceneManagerOptions;
 
   private renderer!: THREE.WebGLRenderer;
   private scene!: THREE.Scene;
@@ -32,16 +44,21 @@ export class SceneManager {
   private padding = 32;
   private borderRadius = 32;
   private videoFadeStartedAt: number | null = null;
+  private videoFrameCallbackId: number | null = null;
+  private videoFrameDirty = false;
+  private didNotifyVideoFrameReady = false;
   private disposed = false;
 
   constructor(
     canvas: HTMLCanvasElement,
     video: HTMLVideoElement,
-    backgroundUrl: string
+    backgroundUrl: string,
+    options: SceneManagerOptions = {}
   ) {
     this.canvas = canvas;
     this.video = video;
     this.backgroundUrl = backgroundUrl;
+    this.options = options;
   }
 
   async init(): Promise<void> {
@@ -91,6 +108,7 @@ export class SceneManager {
 
     this.video.addEventListener("loadedmetadata", this.handleVideoMetadata);
     this.video.addEventListener("loadeddata", this.handleVideoData);
+    this.startVideoFrameLoop();
     this.resize(this.canvas.clientWidth, this.canvas.clientHeight);
   }
 
@@ -130,7 +148,10 @@ export class SceneManager {
     if (this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
       this.revealVideo();
       this.updateVideoOpacity();
-      this.videoTexture.needsUpdate = true;
+      if (this.videoFrameDirty || !this.hasVideoFrameCallback()) {
+        this.videoTexture.needsUpdate = true;
+        this.videoFrameDirty = false;
+      }
     }
     this.renderer.render(this.scene, this.camera);
   }
@@ -139,6 +160,7 @@ export class SceneManager {
     this.disposed = true;
     this.video.removeEventListener("loadedmetadata", this.handleVideoMetadata);
     this.video.removeEventListener("loadeddata", this.handleVideoData);
+    this.cancelVideoFrameLoop();
     this.videoTexture?.dispose();
     this.backgroundTexture?.dispose();
     this.videoMaterial?.dispose();
@@ -223,6 +245,11 @@ export class SceneManager {
   private revealVideo(): void {
     this.videoMesh.visible = true;
     this.videoFadeStartedAt ??= performance.now();
+
+    if (!this.didNotifyVideoFrameReady) {
+      this.didNotifyVideoFrameReady = true;
+      this.options.onVideoFrameReady?.();
+    }
   }
 
   private updateVideoOpacity(): void {
@@ -231,6 +258,37 @@ export class SceneManager {
     const elapsed = performance.now() - this.videoFadeStartedAt;
     const opacity = Math.min(elapsed / VIDEO_FADE_MS, 1);
     this.videoMaterial.uniforms.uOpacity.value = opacity;
+  }
+
+  private startVideoFrameLoop(): void {
+    const video = this.video as VideoFrameCallbackVideo;
+    if (!video.requestVideoFrameCallback) return;
+
+    const onFrame = () => {
+      if (this.disposed) return;
+      this.videoFrameDirty = true;
+      this.revealVideo();
+      this.videoFrameCallbackId = video.requestVideoFrameCallback?.(onFrame) ?? null;
+    };
+
+    this.videoFrameCallbackId = video.requestVideoFrameCallback(onFrame);
+  }
+
+  private cancelVideoFrameLoop(): void {
+    const video = this.video as VideoFrameCallbackVideo;
+    if (
+      this.videoFrameCallbackId !== null &&
+      video.cancelVideoFrameCallback
+    ) {
+      video.cancelVideoFrameCallback(this.videoFrameCallbackId);
+    }
+    this.videoFrameCallbackId = null;
+  }
+
+  private hasVideoFrameCallback(): boolean {
+    return Boolean(
+      (this.video as VideoFrameCallbackVideo).requestVideoFrameCallback
+    );
   }
 
   /** Fit inside the box — full video visible, no cropping */

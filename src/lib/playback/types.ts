@@ -3,6 +3,7 @@ import type { SkipRange } from "@/lib/transcript/types";
 export interface MediaMetadata {
   videoUrl: string;
   backgroundUrl: string;
+  posterUrl: string;
   duration: number;
   title?: string;
 }

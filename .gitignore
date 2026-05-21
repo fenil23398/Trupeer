@@ -23,6 +23,9 @@
 # misc
 .DS_Store
 *.pem
+PLAN.md
+*PLAN*.md
+THREE_JS_VIDEO_PLAYER_DOC.md
 
 # debug
 npm-debug.log*

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FastForward } from "lucide-react";
 import { usePlaybackEngine } from "@/context/PlaybackContext";
 import { usePlayback } from "@/hooks/usePlayback";
+import { TranscriptWord } from "@/components/sidebar/TranscriptWord";
 import {
   createSkipRangeFromWordIds,
   getWordIdsFromSelection,
@@ -13,7 +14,6 @@ import type { NormalizedTranscript, SkipRange } from "@/lib/transcript/types";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
 
 interface TranscriptPanelProps {
   transcript: NormalizedTranscript;
@@ -45,16 +45,21 @@ export function TranscriptPanel({
     });
   }, [activeWordId]);
 
-  const updateToolbarPosition = useCallback((range: Range) => {
+  const updateToolbarPosition = useCallback((wordIds: number[]) => {
     const container = containerRef.current;
     if (!container) return;
 
-    const rect = range.getBoundingClientRect();
+    const firstSelectedWord = container.querySelector<HTMLElement>(
+      `[data-word-id="${wordIds[0]}"]`
+    );
+    if (!firstSelectedWord) return;
+
+    const rect = firstSelectedWord.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
 
     setToolbarPos({
       top: rect.top - containerRect.top - 36,
-      left: rect.left - containerRect.left + rect.width / 2,
+      left: rect.left - containerRect.left,
     });
   }, []);
 
@@ -76,7 +81,7 @@ export function TranscriptPanel({
       return;
     }
 
-    updateToolbarPosition(selection.getRangeAt(0));
+    updateToolbarPosition(ids);
   }, [updateToolbarPosition]);
 
   useEffect(() => {
@@ -134,13 +139,16 @@ export function TranscriptPanel({
     clearSelection();
   };
 
-  const handleWordClick = (wordId: number, start: number) => {
-    const selection = window.getSelection();
-    if (selection && !selection.isCollapsed) return;
+  const handleWordClick = useCallback(
+    (_wordId: number, start: number, skipped: boolean) => {
+      const selection = window.getSelection();
+      if (selection && !selection.isCollapsed) return;
 
-    if (isWordSkipped(wordId, skipRanges)) return;
-    engine.seek(start);
-  };
+      if (skipped) return;
+      engine.seek(start);
+    },
+    [engine]
+  );
 
   const hasSkippedSelection = selectedWordIds.some((id) =>
     isWordSkipped(id, skipRanges)
@@ -162,7 +170,7 @@ export function TranscriptPanel({
         >
           {showToolbar && (
             <div
-              className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-1"
+              className="pointer-events-none absolute z-20 -translate-y-1"
               style={{ top: toolbarPos.top, left: toolbarPos.left }}
             >
               <div className="pointer-events-auto rounded-full border border-border bg-popover p-1 shadow-lg ring-1 ring-black/5 dark:ring-white/10">
@@ -207,22 +215,16 @@ export function TranscriptPanel({
               const isActive = token.id === activeWordId && !skipped;
 
               return (
-                <span
+                <TranscriptWord
                   key={`word-${token.id}`}
                   ref={isActive ? activeWordRef : undefined}
-                  data-word-id={token.id}
-                  onClick={() =>
-                    handleWordClick(token.id!, token.start ?? 0)
-                  }
-                  className={cn(
-                    "cursor-text rounded-sm transition-colors",
-                    isActive && "bg-yellow-100 dark:bg-yellow-400/25",
-                    skipped &&
-                      "cursor-pointer text-muted-foreground line-through decoration-muted-foreground/80 opacity-60"
-                  )}
-                >
-                  {token.text}
-                </span>
+                  id={token.id!}
+                  text={token.text}
+                  start={token.start ?? 0}
+                  isActive={isActive}
+                  skipped={skipped}
+                  onWordClick={handleWordClick}
+                />
               );
             })}
           </div>

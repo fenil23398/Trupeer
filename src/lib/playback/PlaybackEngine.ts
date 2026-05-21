@@ -1,7 +1,6 @@
 import { findActiveWordId } from "@/lib/transcript/sync";
 import {
   getPlayableTime,
-  getSkipRangeAtTime,
   mergeSkipRanges,
   removeWordIdsFromSkipRanges,
 } from "@/lib/transcript/skip";
@@ -13,6 +12,7 @@ import type {
 } from "./types";
 
 const UI_EMIT_INTERVAL_MS = 100;
+const SKIP_LEAD_SECONDS = 0.12;
 
 export class PlaybackEngine {
   private readonly video: HTMLVideoElement;
@@ -101,7 +101,7 @@ export class PlaybackEngine {
 
   async play(): Promise<void> {
     if (this.disposed) return;
-    const playable = getPlayableTime(this.video.currentTime, this.skipRanges);
+    const playable = this.getPlayablePlaybackTime(this.video.currentTime);
     if (playable !== this.video.currentTime) {
       this.video.currentTime = playable;
     }
@@ -140,10 +140,7 @@ export class PlaybackEngine {
     if (this.disposed) return;
 
     if (this.isPlaying && !this.isScrubbing) {
-      const skipRange = getSkipRangeAtTime(
-        this.skipRanges,
-        this.video.currentTime
-      );
+      const skipRange = this.getSkipRangeForPlayback(this.video.currentTime);
       if (skipRange) {
         this.video.currentTime = skipRange.end;
       }
@@ -172,6 +169,24 @@ export class PlaybackEngine {
     this.isPlaying = false;
     this.emit(true);
   };
+
+  private getPlayablePlaybackTime(time: number): number {
+    const skipRange = this.getSkipRangeForPlayback(time);
+    return skipRange ? skipRange.end : getPlayableTime(time, this.skipRanges);
+  }
+
+  private getSkipRangeForPlayback(time: number): SkipRange | null {
+    for (const range of this.skipRanges) {
+      const shouldJumpBeforeAudioStarts =
+        time >= range.start - SKIP_LEAD_SECONDS && time < range.end;
+
+      if (shouldJumpBeforeAudioStarts) {
+        return range;
+      }
+    }
+
+    return null;
+  }
 
   private emit(force: boolean): void {
     const now = performance.now();

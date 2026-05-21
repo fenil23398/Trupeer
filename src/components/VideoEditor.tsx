@@ -13,8 +13,9 @@ import { PlaybackBar } from "@/components/player/PlaybackBar";
 import { TranscriptPanel } from "@/components/sidebar/TranscriptPanel";
 import { VideoStyleControls } from "@/components/sidebar/VideoStyleControls";
 import { PlaybackEngine } from "@/lib/playback/PlaybackEngine";
+import { useEditorStore } from "@/stores/editorStore";
 import type { MediaMetadata } from "@/lib/playback/types";
-import type { NormalizedTranscript, SkipRange } from "@/lib/transcript/types";
+import type { NormalizedTranscript } from "@/lib/transcript/types";
 
 interface VideoEditorProps {
   transcript: NormalizedTranscript;
@@ -24,11 +25,14 @@ interface VideoEditorProps {
 export function VideoEditor({ transcript, media }: VideoEditorProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [engine, setEngine] = useState<PlaybackEngine | null>(null);
-  const [padding, setPadding] = useState(32);
-  const [borderRadius, setBorderRadius] = useState(32);
-  const [skipRanges, setSkipRanges] = useState<SkipRange[]>([]);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [sceneAspect, setSceneAspect] = useState(16 / 9);
+  const padding = useEditorStore((state) => state.padding);
+  const borderRadius = useEditorStore((state) => state.borderRadius);
+  const skipRanges = useEditorStore((state) => state.skipRanges);
+  const setPadding = useEditorStore((state) => state.setPadding);
+  const setBorderRadius = useEditorStore((state) => state.setBorderRadius);
+  const setSkipRanges = useEditorStore((state) => state.setSkipRanges);
 
   const wordMeta = useMemo(
     () =>
@@ -125,6 +129,7 @@ export function VideoEditor({ transcript, media }: VideoEditorProps) {
                 ) : (
                   <CompositedVideoPlayer
                     backgroundSrc={media.backgroundUrl}
+                    posterSrc={media.posterUrl}
                     padding={padding}
                     borderRadius={borderRadius}
                   />

@@ -27,6 +27,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="preload" as="image" href="/assets/background.jpg" />
+      </head>
       <body className="min-h-full overflow-hidden font-sans">{children}</body>
     </html>
   );

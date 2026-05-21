@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePlaybackEngine } from "@/context/PlaybackContext";
 import { SceneManager } from "@/lib/three/SceneManager";
 import { SCENE_FRAME_RADIUS } from "@/components/player/PlayerCanvasFrame";
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 export interface CompositedVideoPlayerProps {
   backgroundSrc: string;
+  posterSrc: string;
   padding: number;
   borderRadius: number;
   className?: string;
@@ -15,15 +16,29 @@ export interface CompositedVideoPlayerProps {
 
 export function CompositedVideoPlayer({
   backgroundSrc,
+  posterSrc,
   padding,
   borderRadius,
   className,
 }: CompositedVideoPlayerProps) {
   const engine = usePlaybackEngine();
+  const [isVideoFrameReady, setIsVideoFrameReady] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<SceneManager | null>(null);
   const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const backgroundImage = new Image();
+    backgroundImage.src = backgroundSrc;
+
+    const posterImage = new Image();
+    posterImage.src = posterSrc;
+  }, [backgroundSrc, posterSrc]);
+
+  useEffect(() => {
+    setIsVideoFrameReady(false);
+  }, [backgroundSrc, posterSrc]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -31,7 +46,9 @@ export function CompositedVideoPlayer({
     if (!canvas || !container) return;
 
     const video = engine.getVideoElement();
-    const sceneManager = new SceneManager(canvas, video, backgroundSrc);
+    const sceneManager = new SceneManager(canvas, video, backgroundSrc, {
+      onVideoFrameReady: () => setIsVideoFrameReady(true),
+    });
     sceneRef.current = sceneManager;
 
     let mounted = true;
@@ -92,12 +109,22 @@ export function CompositedVideoPlayer({
   return (
     <div
       ref={containerRef}
-      className={cn("h-full w-full overflow-hidden", className)}
+      className={cn("relative h-full w-full overflow-hidden", className)}
       style={{ borderRadius: SCENE_FRAME_RADIUS }}
     >
+      <img
+        src={posterSrc}
+        alt=""
+        aria-hidden="true"
+        className={cn(
+          "absolute inset-0 h-full w-full object-cover transition-opacity duration-200",
+          isVideoFrameReady ? "opacity-0" : "opacity-100"
+        )}
+        style={{ borderRadius: SCENE_FRAME_RADIUS }}
+      />
       <canvas
         ref={canvasRef}
-        className="block h-full w-full"
+        className="relative block h-full w-full"
         style={{ borderRadius: SCENE_FRAME_RADIUS }}
         aria-label="Composited video player"
       />

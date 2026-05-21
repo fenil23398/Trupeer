@@ -1,9 +1,10 @@
-import { readFile } from "fs/promises";
+import { access, readFile } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   let duration = 200.42;
+  let posterUrl = "/assets/background.jpg";
 
   try {
     const transcriptPath = path.join(
@@ -22,10 +23,18 @@ export async function GET() {
     // use default duration
   }
 
+  try {
+    await access(path.join(process.cwd(), "public/assets/poster.jpg"));
+    posterUrl = "/assets/poster.jpg";
+  } catch {
+    // Background is the no-404 fallback until a generated poster is added.
+  }
+
   return NextResponse.json(
     {
       videoUrl: "/assets/video.mp4",
       backgroundUrl: "/assets/background.jpg",
+      posterUrl,
       duration,
       title: "Trupeer Demo",
     },

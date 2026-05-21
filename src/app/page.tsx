@@ -1,4 +1,4 @@
-import { readFile } from "fs/promises";
+import { access, readFile } from "fs/promises";
 import path from "path";
 import { VideoEditor } from "@/components/VideoEditor";
 import { normalizeTranscript } from "@/lib/transcript/normalize";
@@ -12,9 +12,19 @@ async function loadTranscript() {
 }
 
 async function loadMedia(duration: number): Promise<MediaMetadata> {
+  let posterUrl = "/assets/background.jpg";
+
+  try {
+    await access(path.join(process.cwd(), "public/assets/poster.jpg"));
+    posterUrl = "/assets/poster.jpg";
+  } catch {
+    // Keep the page 404-free when a poster has not been generated yet.
+  }
+
   return {
     videoUrl: "/assets/video.mp4",
     backgroundUrl: "/assets/background.jpg",
+    posterUrl,
     duration,
     title: "Trupeer Demo",
   };
