@@ -10,12 +10,14 @@ interface PlayerCanvasFrameProps {
   children: React.ReactNode;
   /** Match the video aspect so padding 0 fills the frame without cropping */
   aspectRatio?: number;
+  borderRadius?: number;
   className?: string;
 }
 
 export function PlayerCanvasFrame({
   children,
   aspectRatio = DEFAULT_ASPECT,
+  borderRadius,
   className,
 }: PlayerCanvasFrameProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -56,6 +58,8 @@ export function PlayerCanvasFrame({
     return () => resizeObserver.disconnect();
   }, [aspectRatio]);
 
+  const radius = borderRadius === undefined ? SCENE_FRAME_RADIUS : `${borderRadius}px`;
+
   return (
     <div
       ref={containerRef}
@@ -72,12 +76,12 @@ export function PlayerCanvasFrame({
           height: frameSize.height || undefined,
           maxWidth: "100%",
           maxHeight: "100%",
-          borderRadius: SCENE_FRAME_RADIUS,
+          borderRadius: radius,
         }}
       >
         <div
           className="h-full w-full overflow-hidden"
-          style={{ borderRadius: SCENE_FRAME_RADIUS }}
+          style={{ borderRadius: radius }}
         >
           {children}
         </div>

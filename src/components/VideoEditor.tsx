@@ -61,7 +61,10 @@ export function VideoEditor({ transcript, media }: VideoEditorProps) {
               </div>
             }
             player={
-              <PlayerCanvasFrame aspectRatio={sceneAspect}>
+              <PlayerCanvasFrame
+                aspectRatio={sceneAspect}
+                borderRadius={borderRadius}
+              >
                 {videoError ? (
                   <VideoErrorState message={videoError} />
                 ) : (

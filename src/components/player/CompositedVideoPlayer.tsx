@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlaybackEngine } from "@/context/PlaybackContext";
 import { SceneManager } from "@/lib/three/SceneManager";
-import { SCENE_FRAME_RADIUS } from "@/components/player/PlayerCanvasFrame";
 import { cn } from "@/lib/utils";
 
 export interface CompositedVideoPlayerProps {
@@ -23,6 +22,7 @@ export function CompositedVideoPlayer({
 }: CompositedVideoPlayerProps) {
   const engine = usePlaybackEngine();
   const [isVideoFrameReady, setIsVideoFrameReady] = useState(false);
+  const radius = `${borderRadius}px`;
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<SceneManager | null>(null);
@@ -110,7 +110,7 @@ export function CompositedVideoPlayer({
     <div
       ref={containerRef}
       className={cn("relative h-full w-full overflow-hidden", className)}
-      style={{ borderRadius: SCENE_FRAME_RADIUS }}
+      style={{ borderRadius: radius }}
     >
       <img
         src={posterSrc}
@@ -120,12 +120,12 @@ export function CompositedVideoPlayer({
           "absolute inset-0 h-full w-full object-cover transition-opacity duration-200",
           isVideoFrameReady ? "opacity-0" : "opacity-100"
         )}
-        style={{ borderRadius: SCENE_FRAME_RADIUS }}
+        style={{ borderRadius: radius }}
       />
       <canvas
         ref={canvasRef}
         className="relative block h-full w-full"
-        style={{ borderRadius: SCENE_FRAME_RADIUS }}
+        style={{ borderRadius: radius }}
         aria-label="Composited video player"
       />
     </div>
