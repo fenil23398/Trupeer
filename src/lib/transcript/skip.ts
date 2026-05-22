@@ -1,6 +1,7 @@
 import type { NormalizedWord, SkipRange } from "./types";
 
 type WordTiming = Pick<NormalizedWord, "id" | "start" | "end">;
+const SKIP_START_GUARD_SECONDS = 0.2;
 
 export function mergeSkipRanges(ranges: SkipRange[]): SkipRange[] {
   if (ranges.length === 0) return [];
@@ -49,7 +50,10 @@ export function createSkipRangeFromWordIds(
   const selected = words.filter((w) => wordIds.includes(w.id));
   if (selected.length === 0) return null;
 
-  const start = Math.min(...selected.map((w) => w.start));
+  const start = Math.max(
+    0,
+    Math.min(...selected.map((w) => w.start)) - SKIP_START_GUARD_SECONDS
+  );
   const end = Math.max(...selected.map((w) => w.end));
 
   return {
@@ -90,7 +94,7 @@ export function removeWordIdsFromSkipRanges(
 
       nextRanges.push({
         id: `${range.id}-${index}`,
-        start: firstWord.start,
+        start: Math.max(0, firstWord.start - SKIP_START_GUARD_SECONDS),
         end: lastWord.end,
         wordIds: group,
       });

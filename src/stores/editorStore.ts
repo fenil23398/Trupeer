@@ -37,9 +37,6 @@ export const useEditorStore = create<EditorState>()(
     {
       name: "trupeer-editor",
       partialize: (state) => ({
-        padding: state.padding,
-        borderRadius: state.borderRadius,
-        skipRanges: state.skipRanges,
         theme: state.theme,
       }),
     }
