@@ -1,29 +1,17 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-
-type Theme = "light" | "dark";
-
-const STORAGE_KEY = "trupeer-theme";
+import { useEditorStore } from "@/stores/editorStore";
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
+  const theme = useEditorStore((state) => state.theme);
+  const toggleTheme = useEditorStore((state) => state.toggleTheme);
 
   useEffect(() => {
-    const savedTheme = window.localStorage.getItem(STORAGE_KEY);
-    const nextTheme: Theme = savedTheme === "dark" ? "dark" : "light";
-    setTheme(nextTheme);
-    document.documentElement.classList.toggle("dark", nextTheme === "dark");
-  }, []);
-
-  const toggleTheme = () => {
-    const nextTheme: Theme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    window.localStorage.setItem(STORAGE_KEY, nextTheme);
-    document.documentElement.classList.toggle("dark", nextTheme === "dark");
-  };
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
 
   const isDark = theme === "dark";
 
