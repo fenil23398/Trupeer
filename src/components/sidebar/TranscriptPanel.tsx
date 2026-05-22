@@ -126,10 +126,7 @@ export function TranscriptPanel({
 
     engine.addSkipRange(range);
     onSkipRangesChange([...engine.getSkipRanges()]);
-
-    const end = range.end;
     clearSelection();
-    engine.seek(end);
   };
 
   const handleUnskip = () => {
